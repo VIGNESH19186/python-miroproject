@@ -1,94 +1,131 @@
-movies=[
-    "MOVIE 1",
-    "MOVIE 2",
-    "MOVIE 3",
-    "MOVIE 4",
-    "MOVIE 5"
+
+from flask import Flask, render_template_string, request
+
+app = Flask(__name__)
+
+movies = [
+    {"id": 1, "name": "Avengers", "cinema": "PVR Cineplex", "price": 200},
+    {"id": 2, "name": "Inception", "cinema": "INOX", "price": 180},
+    {"id": 3, "name": "Interstellar", "cinema": "Cinepolis", "price": 220},
 ]
 
-a={
-    "IMAX",
-    "PVR",
-    "THEATER"
-}
+def get_movie(movie_id):
+    for m in movies:
+        if m["id"] == movie_id:   
+            return m
+    return None
 
-b={
-    "IMAX":("DIAMOND","GOLD","SILVER"),
-    "PVR":("DIAMOND","GOLD","SILVER"),
-    "THEATER":("DIAMOND","GOLD")
-}
+html = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Movie Booking</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #ffdde1, #ee9ca7);
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
 
-c_price = {                
-    "DIAMOND": 250,
-    "GOLD": 200,
-    "SILVER":150
-}
+        h1 {
+            text-align: center;
+            color: #b30059;
+        }
 
-seats = [
-    [0, 0, 0, 0],[0, 0, 0, 0],[0, 0, 0, 0],
-    [0, 0, 0, 0],[0, 0, 0, 0],[0, 0, 0, 0],
-    [0, 0, 0, 0],[0, 0, 0, 0],[0, 0, 0, 0]
-]
+        .card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px auto;
+            width: 60%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
 
-print("available movies")
-for i, movie in enumerate(movies, start=1):   
-    print(i, movie)
+        button {
+            background: #ff4d6d;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
 
-k=int(input("total number of seats: "))
+        button:hover {
+            background: #cc0033;
+        }
 
+        input {
+            padding: 5px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎬 Movie Booking System</h1>
 
-v = movies[k-1]
+    <h2>Available Movies</h2>
 
-places = tuple(a)   
-print("\nAvailable Places:")
-for i, place in enumerate(places, start=1):
-    print(i, place)
+    {% for movie in movies %}
+        <div>
+            <h3>{{ movie.name }}</h3>
+            <p>Cineplex: {{ movie.cinema }}</p>
+            <p>Price: ₹{{ movie.price }}</p>
 
-place_choice = int(input("Select place number: ")) - 1
-place_selected = places[place_choice]
+            <form method="post" action="/book">
+                <input type="hidden" name="movie_id" value="{{ movie.id }}">
+                Tickets: <input type="number" name="tickets" required>
+                <button type="submit">Book</button>
+            </form>
+        </div>
+        <hr>
+    {% endfor %}
 
-def price(choice):          
-    if choice == 1:
-        return (k*250)+10
-    elif choice == 2:
-        return (k*200)+10
-    else:
-        return (k*150)+10
+    {% if booking %}
+    <h2>Booking Summary</h2>
+        <p>Movie: {{ booking[0] }}</p>
+        <p>Cineplex: {{ booking[1] }}</p>
+        <p>Tickets: {{ booking[2] }}</p>
+        <p>Total: ₹{{ booking[3] }}</p>
+    {% endif %}
 
-seat_choice = int(input("Enter seat type (1/2/3): "))
-print("Total price =", price(seat_choice))
+</body>
+</html>
+"""
 
-while True:
-    print("\nseats selected = 1 , seats available = 0")
-    for row in seats:
-        print(row)
+@app.route('/')
+def home():
+    return render_template_string(html, movies=movies, booking=None)
 
-    r=int(input("enter row (0-8): "))
-    c=int(input("enter col (0-3): "))
+@app.route('/book', methods=['POST'])
+def book():
+    movie_id = int(request.form['movie_id'])
+    tickets = int(request.form['tickets'])
 
-    if seats[r][c] == 0:
-        seats[r][c] = 1
-        print("seat booked successfully")
-    else:
-        print("seat has already been booked")
+    movie = get_movie(movie_id)
 
-    more = input("Book another seat? (yes/no): ")
-    if more.lower() != "yes":
-        break
-movie_selected = v
-place_selected = place_selected
-seat_types = ["DIAMOND", "GOLD", "SILVER"]
-seat_selected = seat_types[seat_choice - 1]
-total_amount = price(seat_choice)
-print("\n" + "*"*30)
-print("        MOVIE BILL")
-print("*"*30)
-print("Movie Name   :", movie_selected)
-print("Theater      :", place_selected)
-print("Seat Type    :", seat_selected)
-print("No. of Seats :", k)
-print("Service Fee  : Rs. 10")
-print("Total Amount : Rs.", total_amount)
-print("*"*30)
-print("   THANK YOU! VISIT AGAIN")
-print("*"*30)
+        movie_name = movie["name"]
+
+        booking = (
+        movie_name,
+        movie["cinema"],
+        tickets,
+        tickets * movie["price"]
+    )
+
+        prices = []
+    for m in movies:
+        prices.append(m["price"])   
+
+    total_movies = len(movies)       
+    highest_price = max(prices)      
+    lowest_price = min(prices)       
+
+    print("Total Movies:", total_movies)
+    print("Highest Price:", highest_price)
+    print("Lowest Price:", lowest_price)
+
+    return render_template_string(html, movies=movies, booking=booking)
+
+if __name__ == '__main__':
+    app.run(debug=True)
